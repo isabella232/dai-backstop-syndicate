@@ -110,7 +110,7 @@ contract DaiBackstopSyndicate is
     uint256 backstopTokenAmount
   ) external returns (uint256 daiRedeemed, uint256 mkrRedeemed) {
     require(
-      backstopTokenAmount > 0, "DaiBackstopSyndicate/enlist: No token amount supplied."
+      backstopTokenAmount > 0, "DaiBackstopSyndicate/defect: No token amount supplied."
     );
       
     // Determine the % ownership. (scaled up by 1e18)
@@ -195,7 +195,7 @@ contract DaiBackstopSyndicate is
   function finalizeAuction(uint256 auctionId) external {
     require(
       _activeAuctions.contains(auctionId),
-      "DaiBackstopSyndicate/enterAuction: Auction already finalized"
+      "DaiBackstopSyndicate/finalizeAuction: Auction already finalized"
     );
 
     // If auction was finalized, end should be 0x0.
