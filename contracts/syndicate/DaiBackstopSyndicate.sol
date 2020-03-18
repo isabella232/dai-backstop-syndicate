@@ -65,13 +65,13 @@ contract DaiBackstopSyndicate is
 
     // Begin in the "accepting deposits" state.
     _status = Status.ACCEPTING_DEPOSITS;
-    
+ 
     // Enable "dai-join" to take vatDai in order mint ERC20 Dai.
     _VAT.hope(address(_DAI_JOIN));
-    
+
     // Enable creation of "vat dai" by approving dai-join.
     _DAI.approve(address(_DAI_JOIN), uint256(-1));
-    
+
     // Enable entry into auctions by approving the "flopper".
     _VAT.hope(SimpleFlopper.getFlopperAddress());
   }
