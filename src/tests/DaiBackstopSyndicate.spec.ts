@@ -395,7 +395,7 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
       context('When enough DAI is in the syndicate', () => {
         beforeEach(async () => {
           // Adding a bit more for some tests + make sure surplus work
-          await syndicateContract.functions.enlist(bid_in_dai)
+          await syndicateContract.functions.enlist(bid_in_dai.add(enlist_amount))
         })
         it('should PASS if enough DAI in syndicate', async () => {
           const tx = syndicateContract.functions.enterAuction(1)
@@ -432,27 +432,115 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
             await expect(bid_obj[2]).to.be.eql(syndicateAddress);
           })
 
-          // it.only('should keep combined dai the same', async () => {
-          //   let dai_balance = await syndicateContract.functions.getDaiBalance()
-          //   await expect(dai_balance).to.be.eql(bid_in_dai);
-          // })
+          it('should keep combined dai the same', async () => {
+            let dai_balance = await syndicateContract.functions.getDaiBalance()
+            await expect(dai_balance).to.be.eql(bid_in_dai.add(enlist_amount));
+          })
 
           it('should PREVENT new deposits', async () => {
             let tx = syndicateContract.functions.enlist(1)
             await expect(tx).to.be.rejectedWith(RevertError('DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made.'))
           })
 
-          // it.only('should PREVENT defects if not enough DAI free in syndicate', async () => {
-          //   console.log(await vatContract.functions.dai(syndicateAddress))
-          //   console.log(enlist_amount)
-          //   let tx = syndicateContract.functions.defect(enlist_amount.add(1))
-          //   await expect(tx).to.be.rejectedWith(RevertError("DaiBackstopSyndicate/defect: Insufficient Dai (in use in auctions)"))
-          // })
+          it('should PREVENT defects if not enough DAI free in syndicate', async () => {
+            let tx = syndicateContract.functions.defect(enlist_amount.mul(2), TX_PARAM)
+            await expect(tx).to.be.rejectedWith(RevertError('DaiBackstopSyndicate/defect: Insufficient Dai - In use in auctions'))
+          })
 
-          // it.only('should ALLOW defects if enough DAI in syndicate', async () => {
-          //   let tx = syndicateContract.functions.defect(enlist_amount)
-          //   await expect(tx).to.be.fulfilled
-          // })
+          it('should ALLOW defects if enough DAI in syndicate', async () => {
+            let tx = syndicateContract.functions.defect(enlist_amount)
+            await expect(tx).to.be.fulfilled
+          })
+        })
+      })
+    })
+
+    describe('finalizeAuction() function', () => {
+      it('should FAIL if we did not participate in auction', async () => {
+        const tx = syndicateContract.functions.finalizeAuction(1)
+        await expect(tx).to.be.rejectedWith(RevertError("DaiBackstopSyndicate/enterAuction: Auction already finalized"));
+      })
+      context('When syndicate entered an auction', () => {
+        beforeEach(async () => {
+          await syndicateContract.functions.enlist(bid_in_dai)
+          await syndicateContract.functions.enterAuction(1)
+        })
+
+        it('should fail if we are the bidder but auction is no over', async () => {
+          let tx = syndicateContract.functions.finalizeAuction(1)
+          await expect(tx).to.be.rejectedWith(RevertError("Flopper/not-finished"))
+        })
+
+        context('When syndicate wins auction', () => {
+          let bid_duration;
+          beforeEach(async () => {
+            bid_duration = (await syndicateContract.functions.getAuctionInformation()).bidDuration.toNumber()
+            await ownerProvider.send("evm_increaseTime", [bid_duration + 1])
+            await ownerProvider.send("evm_mine", [])
+          })
+
+          it('should pass if bid time expired', async () => {
+            let tx = syndicateContract.functions.finalizeAuction(1)
+            await expect(tx).to.be.fulfilled
+          })
+
+          context('When auction is finalized', () => {
+            beforeEach(async () => {
+              await syndicateContract.functions.finalizeAuction(1)
+            })
+
+            it('should mint MKR to syndicate', async () => {
+              let balance = await mkrContract.functions.balanceOf(syndicateAddress)
+              await expect(balance).to.be.eql(new BigNumber(500).mul(e18))
+            })
+
+            it('should remove auction from active auctions list', async () => {
+              let active_auctions = await syndicateContract.functions.getActiveAuctions()
+              await expect(active_auctions.length).to.be.eql(0)
+            })
+
+            it('should set total dai balance to 0', async () => {
+              let dai_balance = await syndicateContract.functions.getDaiBalance()
+              expect(dai_balance).to.be.eql(Zero)
+            })
+          })
+        })
+
+        context('When syndicate gets outbidded', () => {
+          beforeEach(async () => {
+            // user outbid the syndicate
+            await daiContract.functions.approve(daiJoinAddress, bid_in_dai)
+            await daiJoinContract.functions.join(userAddress, bid_in_dai)
+            await vatContract.functions.hope(flopAddress)
+            await flopContract.functions.dent(1, new BigNumber(100).mul(e18), bid)
+          })
+
+          it('should pass even if bid time did not expire', async () => {
+            let tx = syndicateContract.functions.finalizeAuction(1)
+            await expect(tx).to.be.fulfilled
+          })
+
+          context('When auction is finalized for syndicate', () => {
+            beforeEach(async () => {
+              await syndicateContract.functions.finalizeAuction(1)
+            })
+
+            it('should not send MKR to syndicate', async () => {
+              let balance = await mkrContract.functions.balanceOf(syndicateAddress)
+              await expect(balance).to.be.eql(Zero)
+            })
+
+            it('should set total dai balance back to original amount', async () => {
+              let dai_balance = await syndicateContract.functions.getDaiBalance()
+              expect(dai_balance).to.be.eql(bid_in_dai)
+            })
+
+            it('should remove auction from active auctions list', async () => {
+              let active_auctions = await syndicateContract.functions.getActiveAuctions()
+              await expect(active_auctions.length).to.be.eql(0)
+            })
+
+          })
         })
       })
     })

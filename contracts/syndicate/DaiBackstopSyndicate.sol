@@ -82,8 +82,8 @@ contract DaiBackstopSyndicate is
   function enlist(
     uint256 daiAmount
   ) external notWhenDeactivated returns (uint256 backstopTokensMinted) {
-    require(daiAmount > 0, "DaiBackstopSyndicate/enlist: No Dai amount supplied.");  
-      
+    require(daiAmount > 0, "DaiBackstopSyndicate/enlist: No Dai amount supplied.");
+
     require(
       _status == Status.ACCEPTING_DEPOSITS,
       "DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made."
@@ -148,7 +148,7 @@ contract DaiBackstopSyndicate is
     // Ensure that sufficient Dai liquidity is currently available to withdraw.
     require(
       vatDaiRedeemed <= vatDaiBalance,
-      "DaiBackstopSyndicate/defect: Insufficient Dai (in use in auctions)"
+      "DaiBackstopSyndicate/defect: Insufficient Dai - In use in auctions"
     );
 
     // Redeem the Dai and MKR, giving user vatDai if global settlement, otherwise, tokens
@@ -164,7 +164,7 @@ contract DaiBackstopSyndicate is
       require(
         _MKR.transfer(msg.sender, mkrRedeemed),
         "DaiBackstopSyndicate/defect: MKR redemption failed."
-      );      
+      );
     }
   }
 
