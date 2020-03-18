@@ -350,7 +350,7 @@ contract DaiBackstopSyndicate is
       (auctionVatDai,, bidder,,) = SimpleFlopper.getCurrentBid(activeAuctions[i]);
       if (bidder == address(this)) {
         // we are keeping the 45 decimals in case we need to return vatDai
-        vatDai.add(auctionVatDai);
+        vatDai = vatDai.add(auctionVatDai);
       }
     }
   }
