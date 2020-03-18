@@ -266,7 +266,7 @@ contract DaiBackstopSyndicate is
 
   /// @notice Return total amount of DAI that is currently held by Syndicate
   function getDaiBalance() external view returns (uint256 combinedDaiInVat) {
-        // Determine the Dai currently being used to bid in auctions.
+    // Determine the Dai currently being used to bid in auctions.
     uint256 vatDaiLockedInAuctions = _getActiveAuctionVatDaiTotal();
 
     // Determine the Dai currently locked up on behalf of this contract.
@@ -274,6 +274,69 @@ contract DaiBackstopSyndicate is
 
     // Combine Dai locked in auctions with the balance on the contract.
     combinedDaiInVat = vatDaiLockedInAuctions.add(vatDaiBalance) / 1e27;
+  }
+
+  /// @notice Return total amount of DAI that is currently being used in auctions
+  function getDaiBalanceForAuctions() external view returns (uint256 daiInVatForAuctions) {
+    // Determine the Dai currently locked up in auctions.
+    daiInVatForAuctions = _getActiveAuctionVatDaiTotal() / 1e27;
+  }
+
+  /// @notice Return total amount of DAI that is currently withdrawable
+  function getAvailableDaiBalance() external view returns (uint256 daiInVat) {
+    // Determine the Dai currently locked up on behalf of this contract.
+    daiInVat = _VAT.dai(address(this)) / 1e27;
+  }
+
+  /// @notice Return total amount of MKR that is currently in this contract.
+  function getMKRBalance() external view returns (uint256 mkr) {
+    // Determine the MKR currently in this contract.
+    mkr = _MKR.balanceOf(address(this));
+  }
+
+  /// @notice Dry-run of DAI and MKR withdrawal based on Syndicate shares owned
+  /// @param backstopTokenAmount Amount of shares to burn
+  /// @return daiRedeemed: Amount of DAI withdrawn
+  /// @return mkrRedeemed: Amount of MKR withdrawn
+  /// @return redeemable: Whether there's enough Dai not in auctions to withdraw
+  function getDefectAmount(
+    uint256 backstopTokenAmount
+  ) external returns (
+    uint256 daiRedeemed, uint256 mkrRedeemed, bool redeemable
+  ) {
+    if (backstopTokenAmount == 0) {
+      return (0, 0, false);
+    }
+
+    if (backstopTokenAmount > totalSupply()) {
+      revert("Supplied token amount is greater than total supply.");
+    }
+
+    // Determine the % ownership. (scaled up by 1e18)
+    uint256 shareFloat = (backstopTokenAmount.mul(1e18)).div(totalSupply());
+
+    // Determine the Dai currently being used to bid in auctions.
+    uint256 vatDaiLockedInAuctions = _getActiveAuctionVatDaiTotal();
+
+    // Determine the Dai currently locked up on behalf of this contract.
+    uint256 vatDaiBalance = _VAT.dai(address(this));
+
+    // Combine Dai locked in auctions with the balance on the contract.
+    uint256 combinedVatDai = vatDaiLockedInAuctions.add(vatDaiBalance);
+
+    // Determine the Maker currently held by the contract.
+    uint256 makerBalance = _MKR.balanceOf(address(this));
+
+    // Determine the amount of Dai and MKR to redeem based on the share.
+    uint256 vatDaiRedeemed = combinedVatDai.mul(shareFloat) / 1e18;
+    mkrRedeemed = makerBalance.mul(shareFloat) / 1e18;
+
+    // daiRedeemed is the e18 version of vatDaiRedeemed (e45).
+    // Needed for dai ERC20 token, otherwise keep decimals of vatDai.
+    daiRedeemed = vatDaiRedeemed / 1e27;
+
+    // Check that sufficient Dai liquidity is currently available to withdraw.
+    redeemable = (vatDaiRedeemed <= vatDaiBalance);
   }
 
   function _getActiveAuctionVatDaiTotal() internal view returns (uint256 vatDai) {
