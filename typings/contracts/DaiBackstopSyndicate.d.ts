@@ -30,8 +30,6 @@ interface DaiBackstopSyndicateInterface extends Interface {
       encode([]: []): string;
     }>;
 
-    decimals: TypedFunctionDescription<{ encode([]: []): string }>;
-
     decreaseAllowance: TypedFunctionDescription<{
       encode([spender, subtractedValue]: [string, BigNumberish]): string;
     }>;
@@ -56,11 +54,7 @@ interface DaiBackstopSyndicateInterface extends Interface {
 
     isOwner: TypedFunctionDescription<{ encode([]: []): string }>;
 
-    name: TypedFunctionDescription<{ encode([]: []): string }>;
-
     owner: TypedFunctionDescription<{ encode([]: []): string }>;
-
-    symbol: TypedFunctionDescription<{ encode([]: []): string }>;
 
     totalSupply: TypedFunctionDescription<{ encode([]: []): string }>;
 
@@ -100,9 +94,15 @@ interface DaiBackstopSyndicateInterface extends Interface {
 
     getStatus: TypedFunctionDescription<{ encode([]: []): string }>;
 
-    getDaiBalance: TypedFunctionDescription<{ encode([]: []): string }>;
-
     getActiveAuctions: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    name: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    symbol: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    decimals: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    getDaiBalance: TypedFunctionDescription<{ encode([]: []): string }>;
   };
 
   events: {
@@ -174,8 +174,6 @@ export class DaiBackstopSyndicate extends Contract {
       overrides?: TransactionOverrides
     ): Promise<ContractTransaction>;
 
-    decimals(): Promise<number>;
-
     decreaseAllowance(
       spender: string,
       subtractedValue: BigNumberish,
@@ -222,11 +220,7 @@ export class DaiBackstopSyndicate extends Contract {
 
     isOwner(): Promise<boolean>;
 
-    name(): Promise<string>;
-
     owner(): Promise<string>;
-
-    symbol(): Promise<string>;
 
     totalSupply(): Promise<BigNumber>;
 
@@ -272,9 +266,15 @@ export class DaiBackstopSyndicate extends Contract {
 
     getStatus(): Promise<number>;
 
-    getDaiBalance(): Promise<BigNumber>;
-
     getActiveAuctions(): Promise<BigNumber[]>;
+
+    name(): Promise<string>;
+
+    symbol(): Promise<string>;
+
+    decimals(): Promise<number>;
+
+    getDaiBalance(): Promise<BigNumber>;
   };
 
   acceptOwnership(
@@ -294,8 +294,6 @@ export class DaiBackstopSyndicate extends Contract {
   cancelOwnershipTransfer(
     overrides?: TransactionOverrides
   ): Promise<ContractTransaction>;
-
-  decimals(): Promise<number>;
 
   decreaseAllowance(
     spender: string,
@@ -343,11 +341,7 @@ export class DaiBackstopSyndicate extends Contract {
 
   isOwner(): Promise<boolean>;
 
-  name(): Promise<string>;
-
   owner(): Promise<string>;
-
-  symbol(): Promise<string>;
 
   totalSupply(): Promise<BigNumber>;
 
@@ -393,9 +387,15 @@ export class DaiBackstopSyndicate extends Contract {
 
   getStatus(): Promise<number>;
 
-  getDaiBalance(): Promise<BigNumber>;
-
   getActiveAuctions(): Promise<BigNumber[]>;
+
+  name(): Promise<string>;
+
+  symbol(): Promise<string>;
+
+  decimals(): Promise<number>;
+
+  getDaiBalance(): Promise<BigNumber>;
 
   filters: {
     Approval(
@@ -427,8 +427,6 @@ export class DaiBackstopSyndicate extends Contract {
 
     cancelOwnershipTransfer(): Promise<BigNumber>;
 
-    decimals(): Promise<BigNumber>;
-
     decreaseAllowance(
       spender: string,
       subtractedValue: BigNumberish
@@ -451,11 +449,7 @@ export class DaiBackstopSyndicate extends Contract {
 
     isOwner(): Promise<BigNumber>;
 
-    name(): Promise<BigNumber>;
-
     owner(): Promise<BigNumber>;
-
-    symbol(): Promise<BigNumber>;
 
     totalSupply(): Promise<BigNumber>;
 
@@ -481,8 +475,14 @@ export class DaiBackstopSyndicate extends Contract {
 
     getStatus(): Promise<BigNumber>;
 
-    getDaiBalance(): Promise<BigNumber>;
-
     getActiveAuctions(): Promise<BigNumber>;
+
+    name(): Promise<BigNumber>;
+
+    symbol(): Promise<BigNumber>;
+
+    decimals(): Promise<BigNumber>;
+
+    getDaiBalance(): Promise<BigNumber>;
   };
 }
