@@ -6,8 +6,7 @@ import {
   AbstractContract,
   expect,
   RevertError,
-  ZERO_ADDRESS,
-  decimals
+  ZERO_ADDRESS
 } from './utils'
 
 import * as utils from './utils'
@@ -48,7 +47,9 @@ const {
   signer: randomSigner
 } = utils.createTestWallet(web3, 5)
 
-const e27 = new BigNumber(10).pow(27);
+const e18 = new BigNumber(10).pow(18)
+const e27 = new BigNumber(10).pow(27)
+const e45 = new BigNumber(10).pow(45)
 
 contract('DaiBackstopSyndicate', (accounts: string[]) => {
 
@@ -97,18 +98,19 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
   let syndicateContract: DaiBackstopSyndicate
   let syndicateAddress: string
 
-  // Enlist Parameters
-  let user_dai_balance: BigNumber = new BigNumber(75000).mul(decimals)
-  let enlist_amount: BigNumber = new BigNumber(1000).mul(decimals)
-
   // Auction parameters
   let AUCTION_START_TIME: number = 1584490000
   let tau: number = 2*24*60*60
 
   // kick
-  let gal: string = ZERO_ADDRESS
-  let lot: BigNumber = new BigNumber(100)
-  let bid: BigNumber = new BigNumber(50000).mul(decimals)
+  let gal: string
+  const lot: BigNumber = new BigNumber(550).mul(e18) // once above our target
+  const bid: BigNumber = new BigNumber(50000).mul(e45)
+  const bid_in_dai: BigNumber = bid.div(e27)
+
+  // Enlist Parameters
+  let user_dai_balance: BigNumber =  bid_in_dai.mul(5)
+  let enlist_amount: BigNumber = new BigNumber(1000).mul(e18)
 
   // Ganache is often wrong with gas_estimation when doing cross-contract calls
   // so we use a high hard-coded gasLimit when needed
@@ -117,6 +119,7 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
   // load contract abi and deploy to test server
   before(async () => {
     ownerAddress = await ownerWallet.getAddress()
+    gal = ownerAddress
     userAddress = await userWallet.getAddress()
     daiAbstract = await AbstractContract.fromArtifactName('Dai')
     mkrAbstract = await AbstractContract.fromArtifactName('DSToken')
@@ -290,7 +293,7 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
     describe('enterAuction() function', () => {
       it('should FAIL if user did not enlist', async () => {
         let tx = syndicateContract.functions.enterAuction(1)
-        await expect(tx).to.be.fulfilled // To change for expected error
+        await expect(tx).to.be.rejectedWith(RevertError('Flopper/guy-not-set'))
       })
     })
   })
@@ -383,12 +386,69 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
       })
     })
 
-    
     describe('enterAuction() function', () => {
-      it('should FAIL if user did not enlist', async () => {
-        await syndicateOwnerContract.functions.enlist(1)
-        const tx = syndicateContract.functions.defect(enlist_amount, TX_PARAM)
-        await expect(tx).to.be.rejectedWith(RevertError("SafeMath: subtraction overflow"))
+      it('should FAIL if not enough DAI', async () => {
+        await syndicateContract.functions.enlist(bid_in_dai.sub(1))
+        const tx = syndicateContract.functions.enterAuction(1)
+        await expect(tx).to.be.rejected; //No revert message on vat underflow :/
+      })
+      context('When enough DAI is in the syndicate', () => {
+        beforeEach(async () => {
+          // Adding a bit more for some tests + make sure surplus work
+          await syndicateContract.functions.enlist(bid_in_dai)
+        })
+        it('should PASS if enough DAI in syndicate', async () => {
+          const tx = syndicateContract.functions.enterAuction(1)
+          await expect(tx).to.be.fulfilled;
+        })
+        context('When entered an auction', () => {
+          beforeEach(async () => {
+            await syndicateContract.functions.enterAuction(1)
+          })
+
+          it('auction should be considered active', async () => {
+            let auctions = await syndicateContract.functions.getActiveAuctions()
+            await expect(auctions.length).to.be.eql(1);
+            await expect(auctions[0]).to.be.eql(new BigNumber(1))
+          })
+
+          it('syndicate status should be set to ACTIVATED', async () => {
+            let status = await syndicateContract.functions.getStatus()
+            await expect(status).to.be.eql(1);
+          })
+          
+          it('should set bid to be correct', async () => {
+            let bid_obj = await syndicateContract.functions.getCurrentBid(1)
+            await expect(bid_obj[0]).to.be.eql(bid);
+          })
+
+          it('should set MKR in bid to 500 (price 100:1)', async () => {
+            let bid_obj = await syndicateContract.functions.getCurrentBid(1)
+            await expect(bid_obj[1]).to.be.eql(new BigNumber(500).mul(e18));
+          })
+
+          it('should set current bidder to syndicate', async () => {
+            let bid_obj = await syndicateContract.functions.getCurrentBid(1)
+            await expect(bid_obj[2]).to.be.eql(syndicateAddress);
+          })
+
+          // it.only('should PREVENT new deposits', async () => {
+          //   let tx = syndicateContract.functions.enlist(1)
+          //   await expect(tx).to.be.rejectedWith(RevertError('DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made.'))
+          // })
+
+          // it.only('should PREVENT defects if not enough DAI in syndicate', async () => {
+          //   console.log(await vatContract.functions.dai(syndicateAddress))
+          //   console.log(enlist_amount)
+          //   let tx = syndicateContract.functions.defect(enlist_amount.add(1))
+          //   await expect(tx).to.be.rejectedWith(RevertError("DaiBackstopSyndicate/defect: Insufficient Dai (in use in auctions)"))
+          // })
+
+          // it.only('should ALLOW defects if enough DAI in syndicate', async () => {
+          //   let tx = syndicateContract.functions.defect(enlist_amount)
+          //   await expect(tx).to.be.fulfilled
+          // })
+        })
       })
     })
   })
