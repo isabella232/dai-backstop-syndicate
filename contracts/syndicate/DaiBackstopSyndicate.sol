@@ -139,6 +139,12 @@ contract DaiBackstopSyndicate is
     // Needed for dai ERC20 token, otherwise keep decimals of vatDai.
     daiRedeemed = vatDaiRedeemed / 1e27;
 
+    // Ensure that something is returned in exchange for burned tokens.
+    require(
+      mkrRedeemed != 0 || daiRedeemed != 0,
+      "DaiBackstopSyndicate/defect: Nothing returned after burning tokens."
+    );
+
     // Ensure that sufficient Dai liquidity is currently available to withdraw.
     require(
       vatDaiRedeemed <= vatDaiBalance,
