@@ -2,7 +2,6 @@ pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./SimpleFlopper.sol";
@@ -17,8 +16,7 @@ contract DaiBackstopSyndicate is
   IDaiBackstopSyndicate,
   SimpleFlopper,
   TwoStepOwnable,
-  ERC20,
-  ERC20Detailed
+  ERC20
 {
   using SafeMath for uint256;
   using EnumerableSet for EnumerableSet.AuctionIDSet;
@@ -58,16 +56,24 @@ contract DaiBackstopSyndicate is
     address flopper_
   )
     SimpleFlopper(flopper_)
-    ERC20Detailed("Dai Backstop Syndicate v1-100", "DBSv1-100", 18)
     public
   {
-    _status = Status.ACCEPTING_DEPOSITS;
     _DAI = IERC20(dai_);
     _MKR = IERC20(mkr_);
     _DAI_JOIN = IJoin(daiJoin_);
     _VAT = IVat(vat_);
+
+    // Begin in the "accepting deposits" state.
+    _status = Status.ACCEPTING_DEPOSITS;
+    
+    // Enable "dai-join" to take vatDai in order mint ERC20 Dai.
     _VAT.hope(address(_DAI_JOIN));
+    
+    // Enable creation of "vat dai" by approving dai-join.
     _DAI.approve(address(_DAI_JOIN), uint256(-1));
+    
+    // Enable entry into auctions by approving the "flopper".
+    _VAT.hope(SimpleFlopper.getFlopperAddress());
   }
 
   /// @notice User deposits DAI in the BackStop Syndicate and receives Syndicate shares
@@ -76,6 +82,8 @@ contract DaiBackstopSyndicate is
   function enlist(
     uint256 daiAmount
   ) external notWhenDeactivated returns (uint256 backstopTokensMinted) {
+    require(daiAmount > 0, "DaiBackstopSyndicate/enlist: No Dai amount supplied.");  
+      
     require(
       _status == Status.ACCEPTING_DEPOSITS,
       "DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made."
@@ -101,6 +109,10 @@ contract DaiBackstopSyndicate is
   function defect(
     uint256 backstopTokenAmount
   ) external returns (uint256 daiRedeemed, uint256 mkrRedeemed) {
+    require(
+      backstopTokenAmount > 0, "DaiBackstopSyndicate/enlist: No token amount supplied."
+    );
+      
     // Determine the % ownership. (scaled up by 1e18)
     uint256 shareFloat = (backstopTokenAmount.mul(1e18)).div(totalSupply());
 
@@ -123,22 +135,31 @@ contract DaiBackstopSyndicate is
     uint256 vatDaiRedeemed = combinedVatDai.mul(shareFloat) / 1e18;
     mkrRedeemed = makerBalance.mul(shareFloat) / 1e18;
 
-    // daiRedeemed is the e18 version of vatDaiRedeemed (e45). Needed for dai token, otherwise we keep decimals of vatDai
+    // daiRedeemed is the e18 version of vatDaiRedeemed (e45).
+    // Needed for dai ERC20 token, otherwise keep decimals of vatDai.
     daiRedeemed = vatDaiRedeemed / 1e27;
 
     // Ensure that sufficient Dai liquidity is currently available to withdraw.
     require(
-      vatDaiRedeemed <= vatDaiBalance, "DaiBackstopSyndicate/defect: Insufficient Dai (in use in auctions)"
+      vatDaiRedeemed <= vatDaiBalance,
+      "DaiBackstopSyndicate/defect: Insufficient Dai (in use in auctions)"
     );
 
     // Redeem the Dai and MKR, giving user vatDai if global settlement, otherwise, tokens
-    if (SimpleFlopper.isEnabled()) {
-      _DAI_JOIN.exit(msg.sender, daiRedeemed);
-    } else {
-      _VAT.move(address(this), msg.sender, vatDaiRedeemed);
+    if (vatDaiRedeemed > 0) {
+      if (SimpleFlopper.isEnabled()) {
+        _DAI_JOIN.exit(msg.sender, daiRedeemed);
+      } else {
+        _VAT.move(address(this), msg.sender, vatDaiRedeemed);
+      }
     }
 
-    require(_MKR.transfer(msg.sender, mkrRedeemed), "DaiBackstopSyndicate/defect: MKR redemption failed.");
+    if (mkrRedeemed > 0) {
+      require(
+        _MKR.transfer(msg.sender, mkrRedeemed),
+        "DaiBackstopSyndicate/defect: MKR redemption failed."
+      );      
+    }
   }
 
   /// @notice Triggers syndicate participation in an auction, bidding 50k DAI for 500 MKR
@@ -206,8 +227,45 @@ contract DaiBackstopSyndicate is
     status = _status;
   }
 
+  function getActiveAuctions() external view returns (
+    uint256[] memory activeAuctions
+  ) {
+    activeAuctions = _activeAuctions.enumerate();
+  }
+
+  /**
+   * @dev Returns the name of the token.
+   */
+  function name() external view returns (string memory) {
+    return "Dai Backstop Syndicate v3-100";
+  }
+
+  /**
+   * @dev Returns the symbol of the token, usually a shorter version of the
+   * name.
+   */
+  function symbol() external view returns (string memory) {
+    return "DBSv3-100";
+  }
+
+  /**
+   * @dev Returns the number of decimals used to get its user representation.
+   * For example, if `decimals` equals `2`, a balance of `505` tokens should
+   * be displayed to a user as `5,05` (`505 / 10 ** 2`).
+   *
+   * Tokens usually opt for a value of 18, imitating the relationship between
+   * Ether and Wei.
+   *
+   * > Note that this information is only used for _display_ purposes: it in
+   * no way affects any of the arithmetic of the contract, including
+   * `IERC20.balanceOf` and `IERC20.transfer`.
+   */
+  function decimals() external view returns (uint8) {
+    return 18;
+  }
+
   /// @notice Return total amount of DAI that is currently held by Syndicate
-  function getDaiBalance() public view returns (uint256 combinedVatDai) {
+  function getDaiBalance() external view returns (uint256 combinedDaiInVat) {
         // Determine the Dai currently being used to bid in auctions.
     uint256 vatDaiLockedInAuctions = _getActiveAuctionVatDaiTotal();
 
@@ -215,11 +273,7 @@ contract DaiBackstopSyndicate is
     uint256 vatDaiBalance = _VAT.dai(address(this));
 
     // Combine Dai locked in auctions with the balance on the contract.
-    return vatDaiLockedInAuctions.add(vatDaiBalance) / 1e27;
-  }
-
-  function getActiveAuctions() external view returns (uint256[] memory activeAuctions) {
-    activeAuctions = _activeAuctions.enumerate();
+    combinedDaiInVat = vatDaiLockedInAuctions.add(vatDaiBalance) / 1e27;
   }
 
   function _getActiveAuctionVatDaiTotal() internal view returns (uint256 vatDai) {
