@@ -103,6 +103,20 @@ interface DaiBackstopSyndicateInterface extends Interface {
     decimals: TypedFunctionDescription<{ encode([]: []): string }>;
 
     getDaiBalance: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    getDaiBalanceForAuctions: TypedFunctionDescription<{
+      encode([]: []): string;
+    }>;
+
+    getAvailableDaiBalance: TypedFunctionDescription<{
+      encode([]: []): string;
+    }>;
+
+    getMKRBalance: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    getDefectAmount: TypedFunctionDescription<{
+      encode([backstopTokenAmount]: [BigNumberish]): string;
+    }>;
   };
 
   events: {
@@ -275,6 +289,17 @@ export class DaiBackstopSyndicate extends Contract {
     decimals(): Promise<number>;
 
     getDaiBalance(): Promise<BigNumber>;
+
+    getDaiBalanceForAuctions(): Promise<BigNumber>;
+
+    getAvailableDaiBalance(): Promise<BigNumber>;
+
+    getMKRBalance(): Promise<BigNumber>;
+
+    getDefectAmount(
+      backstopTokenAmount: BigNumberish,
+      overrides?: TransactionOverrides
+    ): Promise<ContractTransaction>;
   };
 
   acceptOwnership(
@@ -397,6 +422,17 @@ export class DaiBackstopSyndicate extends Contract {
 
   getDaiBalance(): Promise<BigNumber>;
 
+  getDaiBalanceForAuctions(): Promise<BigNumber>;
+
+  getAvailableDaiBalance(): Promise<BigNumber>;
+
+  getMKRBalance(): Promise<BigNumber>;
+
+  getDefectAmount(
+    backstopTokenAmount: BigNumberish,
+    overrides?: TransactionOverrides
+  ): Promise<ContractTransaction>;
+
   filters: {
     Approval(
       owner: string | null,
@@ -484,5 +520,13 @@ export class DaiBackstopSyndicate extends Contract {
     decimals(): Promise<BigNumber>;
 
     getDaiBalance(): Promise<BigNumber>;
+
+    getDaiBalanceForAuctions(): Promise<BigNumber>;
+
+    getAvailableDaiBalance(): Promise<BigNumber>;
+
+    getMKRBalance(): Promise<BigNumber>;
+
+    getDefectAmount(backstopTokenAmount: BigNumberish): Promise<BigNumber>;
   };
 }
