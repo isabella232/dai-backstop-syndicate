@@ -432,12 +432,17 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
             await expect(bid_obj[2]).to.be.eql(syndicateAddress);
           })
 
-          // it.only('should PREVENT new deposits', async () => {
-          //   let tx = syndicateContract.functions.enlist(1)
-          //   await expect(tx).to.be.rejectedWith(RevertError('DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made.'))
+          // it.only('should keep combined dai the same', async () => {
+          //   let dai_balance = await syndicateContract.functions.getDaiBalance()
+          //   await expect(dai_balance).to.be.eql(bid_in_dai);
           // })
 
-          // it.only('should PREVENT defects if not enough DAI in syndicate', async () => {
+          it('should PREVENT new deposits', async () => {
+            let tx = syndicateContract.functions.enlist(1)
+            await expect(tx).to.be.rejectedWith(RevertError('DaiBackstopSyndicate/enlist: Cannot deposit once the first auction bid has been made.'))
+          })
+
+          // it.only('should PREVENT defects if not enough DAI free in syndicate', async () => {
           //   console.log(await vatContract.functions.dai(syndicateAddress))
           //   console.log(enlist_amount)
           //   let tx = syndicateContract.functions.defect(enlist_amount.add(1))
