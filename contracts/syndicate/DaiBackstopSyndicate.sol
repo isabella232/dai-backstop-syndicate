@@ -307,7 +307,7 @@ contract DaiBackstopSyndicate is
   /// @return redeemable: Whether there's enough Dai not in auctions to withdraw
   function getDefectAmount(
     uint256 backstopTokenAmount
-  ) external returns (
+  ) external view returns (
     uint256 daiRedeemed, uint256 mkrRedeemed, bool redeemable
   ) {
     if (backstopTokenAmount == 0) {
