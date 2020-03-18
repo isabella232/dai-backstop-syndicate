@@ -458,7 +458,7 @@ contract('DaiBackstopSyndicate', (accounts: string[]) => {
     describe('finalizeAuction() function', () => {
       it('should FAIL if we did not participate in auction', async () => {
         const tx = syndicateContract.functions.finalizeAuction(1)
-        await expect(tx).to.be.rejectedWith(RevertError("DaiBackstopSyndicate/enterAuction: Auction already finalized"));
+        await expect(tx).to.be.rejectedWith(RevertError("DaiBackstopSyndicate/finalizeAuction: Auction already finalized"));
       })
       context('When syndicate entered an auction', () => {
         beforeEach(async () => {
