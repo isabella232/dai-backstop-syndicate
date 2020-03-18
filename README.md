@@ -24,7 +24,7 @@ The [`DaiBackstopSyndicate`](.//blob/master/contracts/syndicate/DaiBackstopSyndi
 
 ## Deployed Contract
 
-backstopsyndicate.eth => [0x00000000938F41360a846490409500d08919856C](https://etherscan.io/address/backstopsyndicate.eth#code) (Dai Backstop Syndicate v1-100)
+backstopsyndicate.eth => [0x00000000357646e36Fe575885Bb3e1A0772E64Cc](https://etherscan.io/address/backstopsyndicate.eth#code) (Dai Backstop Syndicate v3-100)
 
 ## Group Chat
 
