@@ -180,7 +180,7 @@ contract DaiBackstopSyndicate is
     (uint256 amountDai, , , , ) = SimpleFlopper.getCurrentBid(auctionId);
 
     // lot needs to have 18 decimal places, and we're expecting 1 mkr == 100 dai
-    uint256 expectedLot = (amountDai / 1e27) / 100;
+    uint256 expectedLot = (amountDai / 1e27) / 120;
 
     // Place the bid, reverting on failure.
     SimpleFlopper._bid(auctionId, expectedLot, amountDai);
@@ -243,7 +243,7 @@ contract DaiBackstopSyndicate is
    * @dev Returns the name of the token.
    */
   function name() external view returns (string memory) {
-    return "Dai Backstop Syndicate v3-100";
+    return "Dai Backstop Syndicate v3-120";
   }
 
   /**
@@ -251,7 +251,7 @@ contract DaiBackstopSyndicate is
    * name.
    */
   function symbol() external view returns (string memory) {
-    return "DBSv3-100";
+    return "DBSv3-120";
   }
 
   /**

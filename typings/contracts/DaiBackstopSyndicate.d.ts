@@ -280,7 +280,7 @@ export class DaiBackstopSyndicate extends Contract {
 
     getStatus(): Promise<number>;
 
-    getActiveAuctions(): Promise<BigNumber[]>;
+    getActiveAuctions(): Promise<(BigNumber)[]>;
 
     name(): Promise<string>;
 
@@ -297,9 +297,15 @@ export class DaiBackstopSyndicate extends Contract {
     getMKRBalance(): Promise<BigNumber>;
 
     getDefectAmount(
-      backstopTokenAmount: BigNumberish,
-      overrides?: TransactionOverrides
-    ): Promise<ContractTransaction>;
+      backstopTokenAmount: BigNumberish
+    ): Promise<{
+      daiRedeemed: BigNumber;
+      mkrRedeemed: BigNumber;
+      redeemable: boolean;
+      0: BigNumber;
+      1: BigNumber;
+      2: boolean;
+    }>;
   };
 
   acceptOwnership(
@@ -412,7 +418,7 @@ export class DaiBackstopSyndicate extends Contract {
 
   getStatus(): Promise<number>;
 
-  getActiveAuctions(): Promise<BigNumber[]>;
+  getActiveAuctions(): Promise<(BigNumber)[]>;
 
   name(): Promise<string>;
 
@@ -429,9 +435,15 @@ export class DaiBackstopSyndicate extends Contract {
   getMKRBalance(): Promise<BigNumber>;
 
   getDefectAmount(
-    backstopTokenAmount: BigNumberish,
-    overrides?: TransactionOverrides
-  ): Promise<ContractTransaction>;
+    backstopTokenAmount: BigNumberish
+  ): Promise<{
+    daiRedeemed: BigNumber;
+    mkrRedeemed: BigNumber;
+    redeemable: boolean;
+    0: BigNumber;
+    1: BigNumber;
+    2: boolean;
+  }>;
 
   filters: {
     Approval(

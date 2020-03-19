@@ -87,7 +87,7 @@ export class IDaiBackstopSyndicate extends Contract {
 
     getStatus(): Promise<number>;
 
-    getActiveAuctions(): Promise<BigNumber[]>;
+    getActiveAuctions(): Promise<(BigNumber)[]>;
   };
 
   enlist(
@@ -114,7 +114,7 @@ export class IDaiBackstopSyndicate extends Contract {
 
   getStatus(): Promise<number>;
 
-  getActiveAuctions(): Promise<BigNumber[]>;
+  getActiveAuctions(): Promise<(BigNumber)[]>;
 
   filters: {
     AuctionEntered(auctionId: null, mkrAsk: null, daiBid: null): EventFilter;
